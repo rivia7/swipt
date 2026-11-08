@@ -31,6 +31,11 @@ const DefaultMTU = 16000
 // (iPhone18,2, iOS 27.0.1 24A446, vphone-cli 2.15.2).
 const GuestMTU = 1280
 
+// A Developer Disk Image upload over a CoreDeviceProxy tunnel hangs at MTU 8000
+// and above and completes at 4000 and below, fastest at 1280, where screenshots
+// and accessibility reads barely slow down (iPhone14,6, iOS 27.2 24B119).
+const LockdownMTU = 1280
+
 const ipv6HeaderLength = 40
 
 type Parameters struct {

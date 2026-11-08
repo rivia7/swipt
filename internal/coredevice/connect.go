@@ -106,7 +106,7 @@ func connectLockdown(ctx context.Context, record *lockdown.PairRecord, dial lock
 	if err != nil {
 		return nil, err
 	}
-	tun, err := tunnel.Open(ctx, conn, tunnelMTU(record.UDID), logger)
+	tun, err := tunnel.Open(ctx, conn, tunnel.LockdownMTU, logger)
 	if err != nil {
 		return nil, err
 	}
