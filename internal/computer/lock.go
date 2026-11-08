@@ -21,7 +21,7 @@ func acquire(path string, url string) (*os.File, error) {
 		if !errors.Is(err, unix.EWOULDBLOCK) {
 			return nil, E.Cause(err, "lock ", path)
 		}
-		return nil, E.New(`another Swipt server is running on this Mac; stop it with "swipt device stop -d `, url, `"`)
+		return nil, E.New(`another Swipt server is running for this device; stop it with "swipt device stop -d `, url, `"`)
 	}
 	return file, nil
 }

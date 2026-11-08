@@ -27,6 +27,7 @@ import (
 
 const (
 	lockFile       = "server.lock"
+	devicesFolder  = "Devices"
 	swipletsFolder = "Swiplets"
 	diskImages     = "/Library/Developer/DeveloperDiskImages/iOS_DDI/Restore"
 	shutdownGrace  = 2 * time.Second
@@ -51,8 +52,15 @@ func Run(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
-	directory := filepath.Join(home, "Library/Application Support/Swipt")
-	caches := filepath.Join(home, "Library/Caches/Swipt")
+	paired, err := chooseDevice(ctx, options.Device)
+	if err != nil {
+		return err
+	}
+	if !filepath.IsLocal(paired.UDID) {
+		return E.New("the device reported an unusable UDID: ", paired.UDID)
+	}
+	directory := filepath.Join(home, "Library/Application Support/Swipt", devicesFolder, paired.UDID)
+	caches := filepath.Join(home, "Library/Caches/Swipt", devicesFolder, paired.UDID)
 	if err = os.MkdirAll(directory, 0o755); err != nil {
 		return err
 	}
@@ -69,10 +77,6 @@ func Run(ctx context.Context, options Options) error {
 		return err
 	}
 	defer held.Close()
-	paired, err := chooseDevice(ctx, options.Device)
-	if err != nil {
-		return err
-	}
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(stored.Port))
 	if errors.Is(err, syscall.EADDRINUSE) {
 		stored.Port = randomPort()
@@ -127,7 +131,7 @@ func Run(ctx context.Context, options Options) error {
 		AppVersion: options.Version, AppBuild: "macOS",
 		Shutdown: func() { stopOnce.Do(func() { close(stop) }) },
 	})
-	advertisement, err := dnssd.Advertise(ctx, Name(), discovery.ServiceType, uint16(stored.Port), nil)
+	advertisement, err := dnssd.Advertise(ctx, instanceName(paired), discovery.ServiceType, uint16(stored.Port), nil)
 	if err != nil {
 		return err
 	}

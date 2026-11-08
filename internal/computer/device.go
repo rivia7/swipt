@@ -19,7 +19,13 @@ import (
 	"github.com/swipt-automation/swipt/internal/usbmuxd"
 )
 
-const connectionUSB = "USB"
+const (
+	connectionUSB = "USB"
+
+	// DNS-SD limits an instance name to 63 bytes.
+	instanceNameLimit = 63
+	udidTailLength    = 8
+)
 
 var ErrDeviceNotListed = E.New("device not listed by usbmuxd")
 
@@ -53,19 +59,20 @@ func chooseDevice(ctx context.Context, given string) (pairedDevice, error) {
 	if err != nil {
 		return pairedDevice{}, err
 	}
+	candidates := preferUSB(listed)
+	// Reading a name dials the phone, so a UDID reads only its own.
+	if index := slices.IndexFunc(candidates, func(it usbmuxd.Device) bool { return strings.EqualFold(it.UDID, given) }); index >= 0 {
+		candidates = candidates[index : index+1]
+	}
 	var devices []pairedDevice
 	var unread []error
-	for _, found := range preferUSB(listed) {
+	for _, found := range candidates {
 		value, err := lockdown.GetValue(ctx, dialer(found.ID), "DeviceName")
 		if err != nil {
 			if ctx.Err() != nil {
 				return pairedDevice{}, err
 			}
-			err = E.Cause(err, "read the name of ", found.UDID)
-			if strings.EqualFold(found.UDID, given) {
-				return pairedDevice{}, err
-			}
-			unread = append(unread, err)
+			unread = append(unread, E.Cause(err, "read the name of ", found.UDID))
 			continue
 		}
 		name, _ := value.(string)
@@ -112,6 +119,20 @@ func label(name string) string {
 		return name
 	}
 	return strings.Join(parts, "-")
+}
+
+// The UDID tail keeps this name apart from the Swipt app's on the same phone,
+// which advertises the bare device name, and from phones that share a name.
+func instanceName(paired pairedDevice) string {
+	tail := paired.UDID[max(len(paired.UDID)-udidTailLength, 0):]
+	name := strings.TrimSpace(paired.Name)
+	if limit := instanceNameLimit - len(tail) - 1; len(name) > limit {
+		name = strings.TrimSpace(strings.ToValidUTF8(name[:limit], ""))
+	}
+	if name == "" {
+		return tail
+	}
+	return name + " " + tail
 }
 
 type lockdownPeer struct {
