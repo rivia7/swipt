@@ -3,13 +3,38 @@
 package computer
 
 /*
-#cgo LDFLAGS: -framework CoreFoundation -framework SystemConfiguration
+#cgo LDFLAGS: -framework CoreFoundation -framework IOKit -framework SystemConfiguration
 #include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/pwr_mgt/IOPMLib.h>
 #include <SystemConfiguration/SystemConfiguration.h>
+
+static IOReturn swipt_prevent_sleep(void) {
+	CFStringRef reason = CFSTR("Swipt is serving a device");
+	IOPMAssertionID idle, system;
+	IOReturn result = IOPMAssertionCreateWithName(kIOPMAssertPreventUserIdleSystemSleep, kIOPMAssertionLevelOn, reason, &idle);
+	if (result != kIOReturnSuccess) {
+		return result;
+	}
+	return IOPMAssertionCreateWithName(kIOPMAssertionTypePreventSystemSleep, kIOPMAssertionLevelOn, reason, &system);
+}
 */
 import "C"
 
-import "unsafe"
+import (
+	"unsafe"
+
+	E "github.com/sagernet/sing/common/exceptions"
+)
+
+// An idle Mac sleeps with phones attached and only an SSH session open, waking
+// for seconds at a time, which stalls every tunnel (Apple M1, macOS 27.2 26B123).
+// powerd ends a process's assertions when it exits, so they are never released here.
+func preventSleep() error {
+	if result := C.swipt_prevent_sleep(); result != 0 {
+		return E.New("prevent the Mac from sleeping: IOReturn ", int32(result))
+	}
+	return nil
+}
 
 func Name() string {
 	name := C.SCDynamicStoreCopyComputerName(0, nil)

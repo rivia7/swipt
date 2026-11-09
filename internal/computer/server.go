@@ -77,6 +77,9 @@ func Run(ctx context.Context, options Options) error {
 		return err
 	}
 	defer held.Close()
+	if err = preventSleep(); err != nil {
+		options.Logs.NewLogger("power").Warn(err)
+	}
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(stored.Port))
 	if errors.Is(err, syscall.EADDRINUSE) {
 		stored.Port = randomPort()
