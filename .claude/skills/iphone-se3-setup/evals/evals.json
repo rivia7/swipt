@@ -1,0 +1,72 @@
+{
+  "skill_name": "iphone-se3-setup",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "SE3-2 和 SE3-4 的签名各还有几天到期？自动续签现在是开着的吗？",
+      "expected_output": "通过 SSH（专用密钥 + IdentitiesOnly）运行只读的 status / auto-renew --check 和 schedule status，报告剩余天数和续签期，不要求用户去桌面，不要密码。",
+      "files": [],
+      "assertions": [
+        "通过 SSH 用只读命令查签名剩余天数（status 或 auto-renew --check），没有用 renew / update",
+        "查看了自动续签是否已安装（schedule status、auto-renew.status 或 launchctl）",
+        "SSH 用专用密钥并加了 IdentitiesOnly=yes，没有索要 Mac 密码",
+        "没有为这次只读查询让用户去 Mac 桌面操作",
+        "[补充] 预期同网段时不插线、不断开 VPN 就能读到签名天数"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "SE3-5 续签的时候报 \"The device must be paired before it can be connected. (com.apple.dt.RemotePairingError error 2)\"，帮我处理一下。",
+      "expected_output": "判断是 Mac 的 CoreDevice 配对丢了（USB 信任还在）；让手机插 USB、解锁，在桌面运行 devicectl manage pair 或重跑 renew（USB 方式会自动重新配对），手机上点信任；续签后 verify --lock-test；不循环重试。",
+      "files": [],
+      "assertions": [
+        "判断原因是 Mac 的 CoreDevice 配对丢了（USB 信任还在）",
+        "处理方法是插 USB、解锁后在 Mac 桌面运行 devicectl manage pair，或重跑 renew 让它自动重新配对",
+        "提醒手机上可能要点“信任”并输入密码",
+        "续签成功后安排了一次 verify --lock-test",
+        "没有建议反复重试解锁或循环重跑"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "接手了一台新的 Mac mini（ops@192.168.101.120），现在只能用密码 SSH 登录。我想以后让你直接远程操作，帮我把这台 Mac 准备好用来接 SE3。",
+      "expected_output": "专用 SSH 密钥 + 用户在自己终端跑 ssh-copy-id（IdentitiesOnly），密码不进聊天；Mac 准备：xcode-select（征得同意）、swipt CLI、Apple 账号和证书、桌面运行 fix-wwdr（始终允许）、关睡眠、同网段；然后 preflight。",
+      "files": [],
+      "assertions": [
+        "建立了专用 SSH 密钥，并让用户在自己的终端窗口里运行 ssh-copy-id",
+        "连接时用 IdentitiesOnly=yes（或说明了 Too many authentication failures 的原因）",
+        "没有让用户把 Mac 密码发到聊天里",
+        "包含 sudo xcode-select -s /Applications/Xcode.app，并征求用户同意",
+        "fix-wwdr 由用户在 Mac 桌面终端运行，并提到“始终允许”",
+        "提到让 Mac 和手机在同一网段（或检查网段）",
+        "[第2轮] 第一次同步脚本、检查 Mac 用的是不带 UDID 的 preflight，没有用占位 UDID，也没有借用 schedule status",
+        "[第2轮] 给出关睡眠的具体命令 sudo pmset -a sleep 0，并征求用户同意"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "SE3-9 刚按流程配完了。帮我把它加进自动续签，再确认一下它以后续签不用插线。",
+      "expected_output": "说明 post 之后它自动在 auto-renew 范围内；通过 SSH 跑 status / auto-renew --check 确认 CoreDevice 能经局域网读到它的签名（=无线续签可行）；schedule status 确认定时任务开着，没开就请用户在桌面 schedule on；不通过 SSH 跑 renew 或 schedule on。",
+      "files": [],
+      "assertions": [
+        "说明 post 之后手机已自动纳入 auto-renew，不需要额外登记",
+        "通过 SSH 用 status 或 auto-renew --check 确认 CoreDevice 能经局域网读到 SE3-9 的签名",
+        "用 schedule status 确认定时任务开着，没开就请用户在 Mac 桌面运行 schedule on",
+        "没有通过 SSH 运行 renew 或 schedule on",
+        "[补充] 认为同网段时续签可以不插线"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Mac 上刚插了两台新的 SE3，还没登记。帮我查一下它们的 UDID，准备开始配置。",
+      "expected_output": "通过 SSH 跑不带 UDID 的 preflight，从列表里取 UDID（不是 devicectl 表格的 Identifier）；只读，不动手机。",
+      "files": [],
+      "assertions": [
+        "通过 SSH 运行不带 UDID 的 preflight（或读 devicectl JSON 里的 hardwareProperties.udid）来取 UDID",
+        "没有把 devicectl list devices 表格里的 Identifier 当成 UDID",
+        "这一步只读，没有对手机运行 prepare、install 之类会改动手机的命令",
+        "SSH 用专用密钥并加了 IdentitiesOnly=yes"
+      ]
+    }
+  ]
+}
