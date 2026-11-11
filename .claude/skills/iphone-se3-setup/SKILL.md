@@ -9,6 +9,10 @@ description: 把 iPhone SE3（SE 第三代 / SE 2022，iPhone14,6，iOS 27）或
 
 手机上跑 Swipt App 和回环 VPN，所以运行时不依赖 Mac 和数据线。Mac 只在配置和续签时需要。
 
+## 本机环境
+
+`references/local.md` 记着这套环境的测试 Mac 的 SSH 地址、参数和主机密钥指纹，手机的 UDID 和 API 地址，以及在手机上跑脚本的方法。它是私有文件，已被 git 忽略，别的机器上可能没有。有的话先读它，里面有的信息不用再问用户。环境有变化就更新它，但不要把里面的地址、UDID 写进会提交的文件。
+
 ## 开始前要向用户确认
 
 - 手机的 UDID。不带 UDID 运行 `preflight`，会列出这台 Mac 认识的手机及其 UDID。`xcrun devicectl list devices` 表格里的 Identifier 列是 CoreDevice 的 UUID，不是 UDID，不要拿错。

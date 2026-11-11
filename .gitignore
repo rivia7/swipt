@@ -5,3 +5,4 @@ xcuserdata/
 /build/
 node_modules/
 /.next/
+/.claude/skills/*/references/local.md
